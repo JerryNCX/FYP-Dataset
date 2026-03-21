@@ -1,0 +1,21 @@
+Meeting on 26/11/2025
+
+Create chapter for project phase
+
+Chapter 1 - for coming 2 weeks / Problem Statement & Literature Review
+
+use case diagram
+
+literature review (20 points)
+10 about technologies (tech stack)
+10 studies on how people behave to choose, how do people choose components, based on brands, performance, budgets etc
+
+Problem Statement
+self-make several questions for this entire project 
+-pratical
+
+send Github link to supervisor for tracking
+
+
+
+# Warrenty of products attached is sold

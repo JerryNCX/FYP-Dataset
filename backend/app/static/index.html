@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Component Analyzer Demo</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        margin: 0;
+        padding: 1.5rem;
+        background: #0f172a;
+        color: #e5e7eb;
+      }
+
+      h1 {
+        margin-bottom: 0.5rem;
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 1.5rem;
+        align-items: flex-start;
+      }
+
+      .panel {
+        background: #020617;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+
+      .panel h2 {
+        margin-top: 0;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #9ca3af;
+      }
+
+      #canvas-wrapper {
+        position: relative;
+        width: 100%;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: radial-gradient(circle at top left, #1e293b, #020617 55%);
+        min-height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      canvas {
+        max-width: 100%;
+      }
+
+      .upload {
+        margin-bottom: 0.75rem;
+      }
+
+      input[type="file"] {
+        color: #e5e7eb;
+      }
+
+      button {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        border: none;
+        padding: 0.55rem 1.2rem;
+        border-radius: 999px;
+        color: #020617;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 0.5rem;
+        box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2),
+          0 10px 30px rgba(34, 197, 94, 0.3);
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 40px rgba(34, 197, 94, 0.4);
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: default;
+        box-shadow: none;
+      }
+
+      .status {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin-top: 0.25rem;
+      }
+
+      .results-list {
+        max-height: 360px;
+        overflow-y: auto;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .result-item {
+        padding: 0.6rem 0.4rem;
+        border-bottom: 1px solid rgba(55, 65, 81, 0.7);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.1rem 0.55rem;
+        border-radius: 999px;
+        background: rgba(55, 65, 81, 0.8);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: #d1d5db;
+        margin-right: 0.35rem;
+      }
+
+      .badge.psu {
+        background: rgba(14, 165, 233, 0.85);
+        color: #020617;
+      }
+
+      .ocr-text {
+        margin-top: 0.25rem;
+        font-size: 0.8rem;
+        color: #e5e7eb;
+      }
+
+      .match {
+        margin-top: 0.25rem;
+        font-size: 0.8rem;
+        color: #a5b4fc;
+      }
+
+      .small {
+        font-size: 0.78rem;
+        color: #6b7280;
+      }
+
+      @media (max-width: 900px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Component Analyzer</h1>
+    <p class="small">
+      Upload a PC component photo. The backend runs YOLO (8 classes) + OCR and
+      searches Supabase for matches.
+    </p>
+
+    <div class="container">
+      <div class="panel">
+        <h2>Image &amp; Detections</h2>
+        <div class="upload">
+          <input type="file" id="fileInput" accept="image/*" />
+          <button id="analyzeBtn" disabled>Analyze</button>
+          <span class="status" id="statusLabel">Select an image</span>
+        </div>
+        <div id="canvas-wrapper">
+          <canvas id="canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Results</h2>
+        <ul id="results" class="results-list"></ul>
+      </div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById("fileInput");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+      const statusLabel = document.getElementById("statusLabel");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const resultsEl = document.getElementById("results");
+
+      let currentImage = null;
+
+      function drawImageWithBoxes(image, detections) {
+        const maxWidth = document
+          .getElementById("canvas-wrapper")
+          .getBoundingClientRect().width;
+        const scale = Math.min(maxWidth / image.width, 1);
+
+        const width = image.width * scale;
+        const height = image.height * scale;
+
+        canvas.width = width;
+        canvas.height = height;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(image, 0, 0, width, height);
+
+        detections.forEach((d, idx) => {
+          const { x1, y1, x2, y2 } = d.bbox;
+          const sx1 = x1 * (width / image.width);
+          const sy1 = y1 * (height / image.height);
+          const sx2 = x2 * (width / image.width);
+          const sy2 = y2 * (height / image.height);
+
+          const hue = (idx * 53) % 360;
+          ctx.strokeStyle = `hsl(${hue}, 95%, 65%)`;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(sx1, sy1, sx2 - sx1, sy2 - sy1);
+
+          const label = `${d.category} ${(d.confidence * 100).toFixed(1)}%`;
+          const textX = sx1 + 3;
+          const textY = sy1 + 14;
+
+          ctx.font = "11px system-ui, -apple-system, BlinkMacSystemFont";
+          const textWidth = ctx.measureText(label).width + 8;
+
+          ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+          ctx.fillRect(textX - 3, textY - 11, textWidth, 16);
+          ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
+          ctx.fillText(label, textX, textY);
+        });
+      }
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            currentImage = img;
+            drawImageWithBoxes(img, []);
+            analyzeBtn.disabled = false;
+            statusLabel.textContent = "Ready to analyze";
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      analyzeBtn.addEventListener("click", async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        analyzeBtn.disabled = true;
+        statusLabel.textContent = "Analyzing...";
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const res = await fetch("/analyze", {
+            method: "POST",
+            body: formData,
+          });
+          if (!res.ok) {
+            throw new Error("Request failed");
+          }
+          const data = await res.json();
+          const detections = data.detections || [];
+
+          if (currentImage) {
+            drawImageWithBoxes(currentImage, detections);
+          }
+
+          resultsEl.innerHTML = "";
+          detections.forEach((d) => {
+            const li = document.createElement("li");
+            li.className = "result-item";
+
+            const badge = document.createElement("span");
+            badge.className =
+              "badge " + (d.category === "power-supply" ? "psu" : "");
+            badge.textContent = d.category;
+            li.appendChild(badge);
+
+            const conf = document.createElement("span");
+            conf.className = "small";
+            conf.textContent = ` ${(d.confidence * 100).toFixed(1)}%`;
+            li.appendChild(conf);
+
+            if (d.ocr_results && d.ocr_results.length > 0) {
+              const ocr = document.createElement("div");
+              ocr.className = "ocr-text";
+              const best = d.ocr_results[0];
+              ocr.textContent = `OCR: "${best.text}" (${(
+                best.confidence * 100
+              ).toFixed(1)}%)`;
+              li.appendChild(ocr);
+            }
+
+            if (d.matches && d.matches.length > 0) {
+              const match = document.createElement("div");
+              match.className = "match";
+              const m = d.matches[0];
+              match.textContent = `Match: ${m.brand || ""} ${m.model || ""}`.trim();
+              li.appendChild(match);
+            }
+
+            resultsEl.appendChild(li);
+          });
+
+          if (detections.length === 0) {
+            statusLabel.textContent = "No components detected.";
+          } else {
+            statusLabel.textContent = `Found ${detections.length} components.`;
+          }
+        } catch (e) {
+          console.error(e);
+          statusLabel.textContent = "Error during analysis.";
+        } finally {
+          analyzeBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
+

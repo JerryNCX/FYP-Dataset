@@ -1,0 +1,15 @@
+More Literature Review
+YOLO / OCR 
+    dataset availability - pcpartpicker scrapping legally / try scrap on amazon
+Uploads methodology - My title is build by using JavaScript, integrating with ML architecture that are Image detection of PC components and OCR to recognise
+
+# Website / Mobile  differences
+    Men majority, article
+
+Architecture Diagram / Activity diagram
+
+# Activity Diagram
+    User Authentication- Sign Up/Login/Logout
+    Product Searching, Image Detection- Search Model Name or Upload Image, then show the products (Text cannot recognise than show out similar categories of image uploaded)
+    Product View and Add Cart - click into product, show details and add cart function
+    {Account Details Management - Name, Address, Phone Number / Shopping Cart Checkout and Payment - Shopping cart to checkout and make payment}

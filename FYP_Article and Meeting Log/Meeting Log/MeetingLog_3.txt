@@ -1,0 +1,9 @@
+Architecture Diagram
+
+Literature Review Own Writing
+
+#  Gantt Chart
+
+Amazon Product Advertising API - Amazon Scrapping
+
+Based Use case prioritize - Image Detection, OCR, Query Search in Database

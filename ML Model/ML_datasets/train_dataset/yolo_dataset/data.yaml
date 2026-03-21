@@ -1,0 +1,6 @@
+train: images/train
+val: images/val
+test: images/test
+
+nc: 8
+names: [ 'cpu', 'video-card', 'motherboard', 'memory', 'internal-hard-drive', 'power-supply', 'case', 'cpu-cooler' ]
