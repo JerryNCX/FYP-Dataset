@@ -2,7 +2,7 @@ from typing import List
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -10,6 +10,22 @@ from backend.app.schemas import AnalyzeResponse, BoundingBox, DetectionResult, O
 from backend.app.services.ocr import get_ocr_engine
 from backend.app.services.supabase import search_components
 from backend.app.services.yolo import get_yolo_detector
+
+
+YOLO_TO_DB_CATEGORY = {
+    "cpu": "CPU",
+    "gpu": "GPU",
+    "video-card": "GPU",
+    "ram": "RAM",
+    "memory": "RAM",
+    "storage": "SSD",
+    "internal-hard-drive": "SSD",
+    "motherboard": "Motherboard",
+    "cooling": "CPU Cooler",
+    "chassis": "PC Case",
+    "power supply": "PSU",
+    "psu": "PSU",
+}
 
 
 app = FastAPI(title="Component Analyzer (YOLO + OCR)")
@@ -21,7 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/",
+app.mount("/html",
           StaticFiles(directory="backend/app/static", html=True),
           name="static")
 
@@ -66,11 +82,19 @@ def analyze_image(
                 continue
             ocr_results.append(OCRResult(text=text, confidence=conf))
 
+        # Map YOLO category to database category
+        mapped_category = YOLO_TO_DB_CATEGORY.get(det["category"], det["category"])
+
         # Use the top OCR text (if any) to query Supabase.
         matches = []
         if ocr_results:
             best_text = ocr_results[0].text
-            matches = search_components(det["category"], best_text)
+            if best_text and len(best_text.strip()) > 1:
+                matches = search_components(mapped_category, best_text)
+
+        # Fallback: if no matches or OCR failed, search by category only
+        if not matches:
+            matches = search_components(mapped_category, "")
 
         detection_results.append(
             DetectionResult(
@@ -83,4 +107,20 @@ def analyze_image(
         )
 
     return AnalyzeResponse(detections=detection_results)
+
+
+@app.get("/search")
+def search_products(
+    category: str = Query(..., description="Category: CPU, GPU, RAM, SSD, Motherboard, CPU Cooler, PC Case, PSU"),
+    q: str = Query("", description="Search text (optional)")
+):
+    """
+    Simple search endpoint for testing product search.
+    Returns products matching the category and optional search text.
+    """
+    if not category:
+        return {"error": "Category is required", "results": []}
+    
+    matches = search_components(category, q)
+    return {"category": category, "query": q, "count": len(matches), "results": matches}
 

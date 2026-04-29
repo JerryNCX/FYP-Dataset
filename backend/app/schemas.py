@@ -18,8 +18,16 @@ class OCRResult(BaseModel):
 class ComponentMatch(BaseModel):
     id: Optional[int] = None
     category: str
-    brand: Optional[str] = None
-    model: Optional[str] = None
+    product_name: Optional[str] = None
+    asin: Optional[str] = None
+    stars: Optional[str] = None
+    rating_count: Optional[str] = None
+    review_page: Optional[str] = None
+    current_price: Optional[str] = None
+    original_price: Optional[str] = None
+    in_stock: Optional[str] = None
+    recent_purchase: Optional[str] = None
+    image: Optional[str] = None
     score: Optional[float] = None
     extra: Optional[dict] = None
 

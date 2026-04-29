@@ -17,7 +17,7 @@ os.makedirs(crop_dir, exist_ok=True)
 # ----------------------
 # LOAD MODELS
 # ----------------------
-yolo_model = YOLO("C:/Users/Admin/Desktop/FYP Dataset/ML Model/ML_datasets/train_dataset/yolo_dataset/runs/detect/train7 yolov8n/weights/best.pt")
+yolo_model = YOLO("C:/Users/Admin/Desktop/FYP Dataset/ML Model/ML_datasets/train_dataset/yolo_dataset/runs/detect/train/weights/best.pt")
 ocr = MMOCRInferencer(det='DBNet', rec='CRNN')
 
 # ----------------------

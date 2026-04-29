@@ -138,6 +138,74 @@
         color: #a5b4fc;
       }
 
+      .match-card {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+        padding: 0.6rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 0.5rem;
+        border: 1px solid rgba(55, 65, 81, 0.5);
+      }
+
+      .match-thumb {
+        width: 70px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 0.35rem;
+        background: #0f172a;
+      }
+
+      .match-details {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .match-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        margin-bottom: 0.25rem;
+        word-wrap: break-word;
+      }
+
+      .match-price {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #22c55e;
+      }
+
+      .match-price-original {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-decoration: line-through;
+        margin-left: 0.4rem;
+      }
+
+      .match-rating {
+        font-size: 0.75rem;
+        color: #fbbf24;
+        margin-top: 0.15rem;
+      }
+
+      .match-stock {
+        font-size: 0.7rem;
+        color: #f87171;
+        margin-top: 0.1rem;
+      }
+
+      .match-link {
+        font-size: 0.7rem;
+        color: #60a5fa;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 0.2rem;
+      }
+
+      .match-link:hover {
+        text-decoration: underline;
+      }
+
       .small {
         font-size: 0.78rem;
         color: #6b7280;
@@ -264,7 +332,9 @@
             throw new Error("Request failed");
           }
           const data = await res.json();
+          console.log("API Response:", data);
           const detections = data.detections || [];
+          console.log("Detections:", detections);
 
           if (currentImage) {
             drawImageWithBoxes(currentImage, detections);
@@ -297,11 +367,71 @@
             }
 
             if (d.matches && d.matches.length > 0) {
-              const match = document.createElement("div");
-              match.className = "match";
-              const m = d.matches[0];
-              match.textContent = `Match: ${m.brand || ""} ${m.model || ""}`.trim();
-              li.appendChild(match);
+              console.log("Matches for detection:", d.matches);
+              d.matches.forEach((m) => {
+                const matchCard = document.createElement("div");
+                matchCard.className = "match-card";
+
+                if (m.image) {
+                  const thumb = document.createElement("img");
+                  thumb.className = "match-thumb";
+                  thumb.src = m.image;
+                  thumb.alt = "Product";
+                  matchCard.appendChild(thumb);
+                }
+
+                const details = document.createElement("div");
+                details.className = "match-details";
+
+                if (m.product_name) {
+                  const name = document.createElement("div");
+                  name.className = "match-name";
+                  name.textContent = m.product_name;
+                  details.appendChild(name);
+                }
+
+                let priceHtml = "";
+                if (m.current_price) {
+                  priceHtml += `<span class="match-price">${m.current_price}</span>`;
+                }
+                if (m.original_price && m.original_price !== m.current_price) {
+                  priceHtml += `<span class="match-price-original">${m.original_price}</span>`;
+                }
+                if (priceHtml) {
+                  const priceDiv = document.createElement("div");
+                  priceDiv.innerHTML = priceHtml;
+                  details.appendChild(priceDiv);
+                }
+
+                if (m.stars || m.rating_count) {
+                  const rating = document.createElement("div");
+                  rating.className = "match-rating";
+                  const starsStr = m.stars ? `${m.stars} ★` : "";
+                  const countStr = m.rating_count ? ` (${m.rating_count.toLocaleString()} reviews)` : "";
+                  rating.textContent = `${starsStr}${countStr}`.trim();
+                  if (rating.textContent) details.appendChild(rating);
+                }
+
+                if (m.in_stock) {
+                  const stock = document.createElement("div");
+                  stock.className = "match-stock";
+                  stock.textContent = m.in_stock;
+                  details.appendChild(stock);
+                }
+
+                if (m.review_page) {
+                  const link = document.createElement("a");
+                  link.className = "match-link";
+                  link.href = m.review_page;
+                  link.target = "_blank";
+                  link.rel = "noopener noreferrer";
+                  link.textContent = "View Reviews →";
+                  details.appendChild(link);
+                }
+
+                matchCard.appendChild(details);
+                li.appendChild(matchCard);
+              });
             }
 
             resultsEl.appendChild(li);

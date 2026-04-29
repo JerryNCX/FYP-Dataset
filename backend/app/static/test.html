@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Component Analyzer - Debug Test Page</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+      color: #f8fafc;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      background: #1e293b;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-radius: 0.5rem 0.5rem 0 0;
+      transition: all 0.2s;
+    }
+
+    .tab:hover {
+      background: #334155;
+    }
+
+    .tab.active {
+      background: #22c55e;
+      color: #020617;
+      font-weight: 600;
+    }
+
+    .panel {
+      display: none;
+      background: #020617;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      border: 1px solid #334155;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    input[type="file"] {
+      color: #e5e7eb;
+    }
+
+    select, input[type="text"] {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid #475569;
+      background: #1e293b;
+      color: #f1f5f9;
+      font-size: 0.9rem;
+    }
+
+    select {
+      min-width: 150px;
+    }
+
+    input[type="text"] {
+      min-width: 200px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 0.5rem;
+      color: #020617;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    canvas {
+      max-width: 100%;
+      border-radius: 0.5rem;
+      border: 1px solid #334155;
+    }
+
+    .section {
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    .result-card {
+      background: #1e293b;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid #334155;
+    }
+
+    .result-card h4 {
+      margin: 0 0 0.5rem 0;
+      color: #f1f5f9;
+      font-size: 0.95rem;
+    }
+
+    .result-item {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #334155;
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .result-label {
+      color: #94a3b8;
+      min-width: 120px;
+    }
+
+    .result-value {
+      color: #f1f5f9;
+      flex: 1;
+    }
+
+    .match-card {
+      display: flex;
+      gap: 1rem;
+      padding: 0.75rem;
+      background: #0f172a;
+      border-radius: 0.5rem;
+      margin-top: 0.5rem;
+      border: 1px solid #475569;
+    }
+
+    .match-thumb {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 0.35rem;
+      background: #1e293b;
+    }
+
+    .match-details {
+      flex: 1;
+    }
+
+    .match-name {
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 0.25rem;
+    }
+
+    .match-price {
+      color: #22c55e;
+      font-weight: 600;
+    }
+
+    .match-price-orig {
+      color: #64748b;
+      text-decoration: line-through;
+      margin-left: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .match-rating {
+      color: #fbbf24;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    .match-stock {
+      color: #f87171;
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+    }
+
+    .match-link {
+      color: #60a5fa;
+      font-size: 0.8rem;
+      text-decoration: none;
+    }
+
+    .match-link:hover {
+      text-decoration: underline;
+    }
+
+    .debug-section {
+      margin-top: 1rem;
+    }
+
+    .debug-toggle {
+      background: #334155;
+      border: none;
+      color: #94a3b8;
+      padding: 0.5rem 1rem;
+      border-radius: 0.35rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .debug-toggle:hover {
+      background: #475569;
+    }
+
+    .debug-content {
+      display: none;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-top: 0.5rem;
+      max-height: 300px;
+      overflow: auto;
+    }
+
+    .debug-content.open {
+      display: block;
+    }
+
+    .debug-content pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 0.8rem;
+      color: #a5b4fc;
+      font-family: monospace;
+    }
+
+    .status {
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .status.info {
+      background: #1e3a5f;
+      color: #93c5fd;
+    }
+
+    .status.success {
+      background: #14532d;
+      color: #86efac;
+    }
+
+    .status.error {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    .status.loading {
+      background: #78350f;
+      color: #fcd34d;
+    }
+
+    .detection-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .detection-badge.cpu { background: #7c3aed; color: #fff; }
+    .detection-badge.gpu { background: #059669; color: #fff; }
+    .detection-badge.ram { background: #0891b2; color: #fff; }
+    .detection-badge.storage { background: #dc2626; color: #fff; }
+    .detection-badge.motherboard { background: #d97706; color: #fff; }
+    .detection-badge.cooling { background: #4f46e5; color: #fff; }
+    .detection-badge.chassis { background: #475569; color: #fff; }
+    .detection-badge.power-supply { background: #0d9488; color: #fff; }
+    .detection-badge.default { background: #64748b; color: #fff; }
+
+    .step-result {
+      padding: 0.75rem;
+      background: #1e293b;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      border-left: 3px solid #22c55e;
+    }
+
+    .step-result.error {
+      border-left-color: #f87171;
+    }
+
+    .step-title {
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 0.25rem;
+    }
+
+    .step-detail {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <h1>Component Analyzer - Debug Test Page</h1>
+  <p class="subtitle">Test each component of the pipeline: YOLO detection, OCR, Supabase search, and full pipeline</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('yolo')">1. YOLO Detection</button>
+    <button class="tab" onclick="showTab('ocr')">2. OCR Test</button>
+    <button class="tab" onclick="showTab('search')">3. Supabase Search</button>
+    <button class="tab" onclick="showTab('full')">4. Full Pipeline</button>
+  </div>
+
+  <!-- YOLO Tab -->
+  <div id="yolo" class="panel active">
+    <div class="controls">
+      <input type="file" id="yoloFile" accept="image/*" />
+      <button id="yoloBtn" onclick="runYolo()" disabled>Run YOLO Detection</button>
+      <span id="yoloStatus" class="status info">Select an image</span>
+    </div>
+    <div class="canvas-wrapper">
+      <canvas id="yoloCanvas"></canvas>
+    </div>
+    <div id="yoloResults"></div>
+    <div class="debug-section">
+      <button class="debug-toggle" onclick="toggleDebug('yoloDebug')">Show Raw JSON</button>
+      <div id="yoloDebug" class="debug-content"><pre></pre></div>
+    </div>
+  </div>
+
+  <!-- OCR Tab -->
+  <div id="ocr" class="panel">
+    <div class="controls">
+      <input type="file" id="ocrFile" accept="image/*" />
+      <button id="ocrBtn" onclick="runOcr()" disabled>Run OCR</button>
+      <span id="ocrStatus" class="status info">Select an image</span>
+    </div>
+    <div class="canvas-wrapper">
+      <canvas id="ocrCanvas"></canvas>
+    </div>
+    <div id="ocrResults"></div>
+    <div class="debug-section">
+      <button class="debug-toggle" onclick="toggleDebug('ocrDebug')">Show Raw JSON</button>
+      <div id="ocrDebug" class="debug-content"><pre></pre></div>
+    </div>
+  </div>
+
+  <!-- Search Tab -->
+  <div id="search" class="panel">
+    <div class="controls">
+      <label style="color: #94a3b8;">Category:</label>
+      <select id="searchCategory">
+        <option value="CPU">CPU</option>
+        <option value="GPU">GPU</option>
+        <option value="RAM">RAM</option>
+        <option value="SSD">SSD</option>
+        <option value="Motherboard">Motherboard</option>
+        <option value="CPU Cooler">CPU Cooler</option>
+        <option value="PC Case">PC Case</option>
+        <option value="PSU">PSU</option>
+      </select>
+      <label style="color: #94a3b8;">Search Text:</label>
+      <input type="text" id="searchText" placeholder="Optional: product name..." />
+      <button onclick="runSearch()">Search Supabase</button>
+      <span id="searchStatus" class="status info">Enter category and click search</span>
+    </div>
+    <div id="searchResults"></div>
+    <div class="debug-section">
+      <button class="debug-toggle" onclick="toggleDebug('searchDebug')">Show Raw JSON</button>
+      <div id="searchDebug" class="debug-content"><pre></pre></div>
+    </div>
+  </div>
+
+  <!-- Full Pipeline Tab -->
+  <div id="full" class="panel">
+    <div class="controls">
+      <input type="file" id="fullFile" accept="image/*" />
+      <button id="fullBtn" onclick="runFull()" disabled>Run Full Analysis</button>
+      <span id="fullStatus" class="status info">Select an image</span>
+    </div>
+    <div class="canvas-wrapper">
+      <canvas id="fullCanvas"></canvas>
+    </div>
+    <div id="fullResults"></div>
+    <div class="debug-section">
+      <button class="debug-toggle" onclick="toggleDebug('fullDebug')">Show Raw JSON</button>
+      <div id="fullDebug" class="debug-content"><pre></pre></div>
+    </div>
+  </div>
+
+  <script>
+    const CATEGORY_MAP = {
+      "cpu": "cpu",
+      "gpu": "gpu",
+      "ram": "ram",
+      "memory": "ram",
+      "storage": "storage",
+      "internal-hard-drive": "storage",
+      "motherboard": "motherboard",
+      "cooling": "cooling",
+      "chassis": "chassis",
+      "power supply": "power-supply",
+      "psu": "power-supply"
+    };
+
+    function showTab(tabId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function toggleDebug(id) {
+      document.getElementById(id).classList.toggle('open');
+    }
+
+    function getBadgeClass(category) {
+      const cat = category.toLowerCase().replace(/[-\s]/g, '');
+      return CATEGORY_MAP[cat] || 'default';
+    }
+
+    function drawImageWithBoxes(img, detections, canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const maxWidth = 500;
+      const scale = Math.min(maxWidth / img.width, 1);
+      const width = img.width * scale;
+      const height = img.height * scale;
+      canvas.width = width;
+      canvas.height = height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      detections.forEach((d, idx) => {
+        const { x1, y1, x2, y2 } = d.bbox;
+        const sx1 = x1 * (width / img.width);
+        const sy1 = y1 * (height / img.height);
+        const sx2 = x2 * (width / img.width);
+        const sy2 = y2 * (height / img.height);
+        const hue = (idx * 53) % 360;
+        ctx.strokeStyle = `hsl(${hue}, 95%, 65%)`;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(sx1, sy1, sx2 - sx1, sy2 - sy1);
+        const label = `${d.category} ${(d.confidence * 100).toFixed(1)}%`;
+        ctx.font = "11px system-ui";
+        const textWidth = ctx.measureText(label).width + 8;
+        ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+        ctx.fillRect(sx1 + 3, sy1 - 11, textWidth, 16);
+        ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
+        ctx.fillText(label, sx1 + 6, sy1);
+      });
+    }
+
+    // YOLO Test
+    document.getElementById('yoloFile').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.getElementById('yoloCanvas');
+          const ctx = canvas.getContext('2d');
+          const scale = Math.min(500 / img.width, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          document.getElementById('yoloBtn').disabled = false;
+          document.getElementById('yoloStatus').textContent = 'Ready - click Run YOLO';
+          document.getElementById('yoloStatus').className = 'status success';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    async function runYolo() {
+      const fileInput = document.getElementById('yoloFile');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('yoloStatus');
+      statusEl.textContent = 'Running YOLO detection...';
+      statusEl.className = 'status loading';
+      document.getElementById('yoloBtn').disabled = true;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/analyze', { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        document.getElementById('yoloDebug').querySelector('pre').textContent = JSON.stringify(data, null, 2);
+        
+        const detections = data.detections || [];
+        
+        if (detections.length === 0) {
+          statusEl.textContent = 'No components detected';
+          statusEl.className = 'status error';
+        } else {
+          statusEl.textContent = `Found ${detections.length} component(s)`;
+          statusEl.className = 'status success';
+          
+          const img = new Image();
+          img.onload = function() {
+            drawImageWithBoxes(img, detections, 'yoloCanvas');
+          };
+          const reader = new FileReader();
+          reader.onload = function(e) { img.src = e.target.result; };
+          reader.readAsDataURL(file);
+        }
+
+        let html = '<div class="section"><div class="section-title">Detected Components</div>';
+        detections.forEach((d, i) => {
+          const badgeClass = getBadgeClass(d.category);
+          html += `<span class="detection-badge ${badgeClass}">${d.category}</span>`;
+        });
+        html += '</div>';
+        html += '<div class="section"><div class="section-title">Detection Details</div>';
+        detections.forEach((d, i) => {
+          html += `<div class="result-card"><h4>Detection #${i + 1}</h4>`;
+          html += `<div class="result-item"><span class="result-label">Category:</span><span class="result-value">${d.category}</span></div>`;
+          html += `<div class="result-item"><span class="result-label">Confidence:</span><span class="result-value">${(d.confidence * 100).toFixed(2)}%</span></div>`;
+          html += `<div class="result-item"><span class="result-label">OCR Text:</span><span class="result-value">${d.ocr_results?.[0]?.text || '(none)'}</span></div>`;
+          html += `</div>`;
+        });
+        html += '</div>';
+        document.getElementById('yoloResults').innerHTML = html;
+
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = 'Error: ' + e.message;
+        statusEl.className = 'status error';
+      } finally {
+        document.getElementById('yoloBtn').disabled = false;
+      }
+    }
+
+    // OCR Test
+    document.getElementById('ocrFile').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.getElementById('ocrCanvas');
+          const ctx = canvas.getContext('2d');
+          const scale = Math.min(500 / img.width, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          document.getElementById('ocrBtn').disabled = false;
+          document.getElementById('ocrStatus').textContent = 'Ready - click Run OCR';
+          document.getElementById('ocrStatus').className = 'status success';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    async function runOcr() {
+      const fileInput = document.getElementById('ocrFile');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('ocrStatus');
+      statusEl.textContent = 'Running OCR...';
+      statusEl.className = 'status loading';
+      document.getElementById('ocrBtn').disabled = true;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/analyze', { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        document.getElementById('ocrDebug').querySelector('pre').textContent = JSON.stringify(data, null, 2);
+        
+        const detections = data.detections || [];
+        
+        if (detections.length === 0) {
+          statusEl.textContent = 'No detections for OCR';
+          statusEl.className = 'status error';
+        } else {
+          statusEl.textContent = `Processed ${detections.length} detection(s)`;
+          statusEl.className = 'status success';
+        }
+
+        let html = '<div class="section"><div class="section-title">OCR Results</div>';
+        detections.forEach((d, i) => {
+          const badgeClass = getBadgeClass(d.category);
+          html += `<div class="result-card"><h4>Detection #${i + 1} <span class="detection-badge ${badgeClass}">${d.category}</span></h4>`;
+          if (d.ocr_results && d.ocr_results.length > 0) {
+            d.ocr_results.forEach((ocr, j) => {
+              html += `<div class="result-item"><span class="result-label">Text ${j + 1}:</span><span class="result-value">"${ocr.text}"</span></div>`;
+              html += `<div class="result-item"><span class="result-label">Confidence:</span><span class="result-value">${(ocr.confidence * 100).toFixed(2)}%</span></div>`;
+            });
+          } else {
+            html += `<div class="result-item"><span class="result-label">OCR:</span><span class="result-value">No text detected</span></div>`;
+          }
+          html += `</div>`;
+        });
+        html += '</div>';
+        document.getElementById('ocrResults').innerHTML = html;
+
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = 'Error: ' + e.message;
+        statusEl.className = 'status error';
+      } finally {
+        document.getElementById('ocrBtn').disabled = false;
+      }
+    }
+
+    // Search Tab
+    async function runSearch() {
+      const category = document.getElementById('searchCategory').value;
+      const text = document.getElementById('searchText').value;
+      const statusEl = document.getElementById('searchStatus');
+      
+      statusEl.textContent = `Searching for "${category}"${text ? ' with text: ' + text : ''}...`;
+      statusEl.className = 'status loading';
+
+      try {
+        const queryParams = new URLSearchParams();
+        queryParams.append('category', category);
+        if (text) queryParams.append('q', text);
+        
+        const res = await fetch('/search?' + queryParams.toString());
+        const data = await res.json();
+        
+        document.getElementById('searchDebug').querySelector('pre').textContent = JSON.stringify(data, null, 2);
+        
+        const results = data.results || [];
+        
+        if (results.length === 0) {
+          statusEl.textContent = `No products found for "${category}"${text ? ' with text "' + text + '"' : ''}`;
+          statusEl.className = 'status error';
+        } else {
+          statusEl.textContent = `Found ${results.length} product(s)`;
+          statusEl.className = 'status success';
+        }
+        
+        let html = '<div class="section"><div class="section-title">Search Results</div>';
+        
+        results.forEach((m, i) => {
+          html += `<div class="match-card">`;
+          if (m.image) {
+            html += `<img class="match-thumb" src="${m.image}" alt="Product" onerror="this.style.display='none'"/>`;
+          }
+          html += `<div class="match-details">`;
+          html += `<div class="match-name">${m.product_name || 'Unknown Product'}</div>`;
+          html += `<div>`;
+          if (m.current_price) {
+            html += `<span class="match-price">${m.current_price}</span>`;
+          }
+          if (m.original_price && m.original_price !== m.current_price) {
+            html += `<span class="match-price-orig">${m.original_price}</span>`;
+          }
+          html += `</div>`;
+          if (m.stars || m.rating_count) {
+            let starsVal = m.stars ? m.stars.replace(/ out of 5 stars/, '') : '';
+            let countVal = '';
+            if (m.rating_count) {
+              const match = m.rating_count.match(/\(([\d,.]+)\)/);
+              countVal = match ? match[1].replace(/,/g, '') : m.rating_count;
+            }
+            html += `<div class="match-rating">${starsVal} ★ ${countVal ? '(' + parseInt(countVal).toLocaleString() + ' reviews)' : ''}</div>`;
+          }
+          if (m.in_stock) {
+            html += `<div class="match-stock">${m.in_stock}</div>`;
+          }
+          if (m.review_page) {
+            html += `<a class="match-link" href="${m.review_page}" target="_blank">View Reviews →</a>`;
+          }
+          html += `</div></div>`;
+        });
+        
+        html += '</div>';
+        document.getElementById('searchResults').innerHTML = html;
+
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = 'Error: ' + e.message;
+        statusEl.className = 'status error';
+      }
+    }
+
+    // Full Pipeline Test
+    document.getElementById('fullFile').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.getElementById('fullCanvas');
+          const ctx = canvas.getContext('2d');
+          const scale = Math.min(500 / img.width, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          document.getElementById('fullBtn').disabled = false;
+          document.getElementById('fullStatus').textContent = 'Ready - click Run Full Analysis';
+          document.getElementById('fullStatus').className = 'status success';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    async function runFull() {
+      const fileInput = document.getElementById('fullFile');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('fullStatus');
+      statusEl.textContent = 'Running full analysis...';
+      statusEl.className = 'status loading';
+      document.getElementById('fullBtn').disabled = true;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const startTime = Date.now();
+        const res = await fetch('/analyze', { method: 'POST', body: formData });
+        const data = await res.json();
+        const elapsed = Date.now() - startTime;
+        
+        document.getElementById('fullDebug').querySelector('pre').textContent = JSON.stringify(data, null, 2);
+        
+        const detections = data.detections || [];
+        
+        statusEl.textContent = `Completed in ${elapsed}ms - Found ${detections.length} component(s)`;
+        statusEl.className = 'status success';
+
+        // Draw boxes
+        const img = new Image();
+        img.onload = function() {
+          drawImageWithBoxes(img, detections, 'fullCanvas');
+        };
+        const reader = new FileReader();
+        reader.onload = function(e) { img.src = e.target.result; };
+        reader.readAsDataURL(file);
+
+        let html = '<div class="section"><div class="section-title">Pipeline Steps</div>';
+        
+        // Step 1: YOLO
+        html += `<div class="step-result"><div class="step-title">Step 1: YOLO Detection</div>`;
+        html += `<div class="step-detail">Detected ${detections.length} component(s): ${detections.map(d => d.category).join(', ')}</div></div>`;
+        
+        // Step 2: Category Mapping
+        html += `<div class="step-result"><div class="step-title">Step 2: Category Mapping</div>`;
+        const categoryMap = {
+          "memory": "RAM",
+          "internal-hard-drive": "SSD",
+          "power supply": "PSU"
+        };
+        detections.forEach(d => {
+          const mapped = categoryMap[d.category] || d.category;
+          html += `<div class="step-detail">${d.category} → ${mapped}</div>`;
+        });
+        html += `</div>`;
+        
+        // Step 3: OCR
+        html += `<div class="step-result"><div class="step-title">Step 3: OCR Text Extraction</div>`;
+        detections.forEach(d => {
+          const ocrText = d.ocr_results?.[0]?.text || '(none)';
+          html += `<div class="step-detail">${d.category}: "${ocrText}"</div>`;
+        });
+        html += `</div>`;
+        
+        // Step 4: Search
+        html += `<div class="step-result"><div class="step-title">Step 4: Supabase Search</div>`;
+        const totalMatches = detections.reduce((sum, d) => sum + (d.matches?.length || 0), 0);
+        html += `<div class="step-detail">Total products found: ${totalMatches}</div>`;
+        detections.forEach((d, i) => {
+          const matchCount = d.matches?.length || 0;
+          html += `<div class="step-detail">${d.category}: ${matchCount} product(s) found</div>`;
+        });
+        html += `</div>`;
+        
+        html += '</div>';
+
+        // Results with product cards
+        html += '<div class="section"><div class="section-title">Product Results</div>';
+        detections.forEach((d, i) => {
+          const badgeClass = getBadgeClass(d.category);
+          html += `<div class="result-card"><h4>Detection #${i + 1} <span class="detection-badge ${badgeClass}">${d.category}</span></h4>`;
+          
+          if (d.matches && d.matches.length > 0) {
+            d.matches.forEach((m, j) => {
+              html += `<div class="match-card">`;
+              if (m.image) {
+                html += `<img class="match-thumb" src="${m.image}" alt="Product" onerror="this.style.display='none'"/>`;
+              }
+              html += `<div class="match-details">`;
+              html += `<div class="match-name">${m.product_name || 'Unknown Product'}</div>`;
+              html += `<div>`;
+              if (m.current_price) {
+                html += `<span class="match-price">${m.current_price}</span>`;
+              }
+              if (m.original_price && m.original_price !== m.current_price) {
+                html += `<span class="match-price-orig">${m.original_price}</span>`;
+              }
+              html += `</div>`;
+              if (m.stars || m.rating_count) {
+                let starsVal2 = m.stars ? m.stars.replace(/ out of 5 stars/, '') : '';
+                let countVal2 = '';
+                if (m.rating_count) {
+                  const match2 = m.rating_count.match(/\(([\d,.]+)\)/);
+                  countVal2 = match2 ? match2[1].replace(/,/g, '') : m.rating_count;
+                }
+                html += `<div class="match-rating">${starsVal2} ★ ${countVal2 ? '(' + parseInt(countVal2).toLocaleString() + ' reviews)' : ''}</div>`;
+              }
+              if (m.in_stock) {
+                html += `<div class="match-stock">${m.in_stock}</div>`;
+              }
+              if (m.review_page) {
+                html += `<a class="match-link" href="${m.review_page}" target="_blank">View Reviews →</a>`;
+              }
+              html += `</div></div>`;
+            });
+          } else {
+            html += `<div class="result-item"><span class="result-value" style="color: #f87171;">No products found in database for this category</span></div>`;
+          }
+          html += `</div>`;
+        });
+        html += '</div>';
+        
+        document.getElementById('fullResults').innerHTML = html;
+
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = 'Error: ' + e.message;
+        statusEl.className = 'status error';
+      } finally {
+        document.getElementById('fullBtn').disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
