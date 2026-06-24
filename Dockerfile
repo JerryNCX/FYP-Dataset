@@ -8,7 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY requirements.txt .
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
 RUN pip install --no-cache-dir -r requirements.txt
+
+ENV CUDA_VISIBLE_DEVICES=-1
 
 COPY start.sh .
 COPY backend/ backend/

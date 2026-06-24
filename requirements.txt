@@ -1,15 +1,10 @@
 fastapi
 uvicorn[standard]
 ultralytics
-easyocr
 pytesseract
 supabase
 python-multipart
 pydantic
 opencv-python-headless
 numpy
-# MMOCR (optional OCR backend OCR_BACKEND=mmocr). Install mmcv per:
-# https://mmocr.readthedocs.io/en/latest/get_started/installation.html
-mmocr
-mmengine
 python-dotenv

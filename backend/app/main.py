@@ -93,6 +93,10 @@ app.mount(
     name="static",
 )
 
+print("Loading YOLO model at startup...")
+get_yolo_detector()
+print("YOLO model loaded.")
+
 
 def load_image_from_upload(file: UploadFile) -> np.ndarray:
     data = file.file.read()
