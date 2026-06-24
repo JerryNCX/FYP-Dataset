@@ -1,5 +1,6 @@
 import json
 import re
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional
 
@@ -117,53 +118,78 @@ def health() -> dict:
 def analyze_image(
     file: UploadFile = File(...),
 ) -> AnalyzeResponse:
-    image_bgr = load_image_from_upload(file)
+    print("=== /analyze endpoint hit ===")
+    print(f"  filename={file.filename}, content_type={file.content_type}")
 
-    yolo = get_yolo_detector()
-    ocr_engine = get_ocr_engine()
+    try:
+        image_bgr = load_image_from_upload(file)
+        h, w = image_bgr.shape[:2]
+        print(f"  image decoded: {w}x{h}, {image_bgr.nbytes / 1024:.0f}KB")
 
-    detections_raw = yolo.detect(image_bgr)
+        print("  loading YOLO detector...")
+        yolo = get_yolo_detector()
+        print("  loading OCR engine...")
+        ocr_engine = get_ocr_engine()
 
-    def process_detection(det):
-        x1, y1, x2, y2 = det["bbox"]
-        crop = image_bgr[y1:y2, x1:x2]
-        if crop.size == 0 or det["confidence"] < 0.5:
-            return None
+        print("  running YOLO inference...")
+        detections_raw = yolo.detect(image_bgr)
+        print(f"  YOLO found {len(detections_raw)} detections")
 
-        raw_ocr = ocr_engine.recognize(crop)
-        ocr_results = []
-        for text, conf in raw_ocr:
-            if text:
-                ocr_results.append(OCRResult(text=text, confidence=conf))
+        def process_detection(det):
+            x1, y1, x2, y2 = det["bbox"]
+            crop = image_bgr[y1:y2, x1:x2]
+            if crop.size == 0 or det["confidence"] < 0.5:
+                return None
 
-        mapped_category = YOLO_TO_DB_CATEGORY.get(det["category"], det["category"])
+            print(f"    OCR on {det['category']} crop ({x2-x1}x{y2-y1})...")
+            raw_ocr = ocr_engine.recognize(crop)
+            print(f"    OCR result: {[t for t, _ in raw_ocr]}")
+            ocr_results = []
+            for text, conf in raw_ocr:
+                if text:
+                    ocr_results.append(OCRResult(text=text, confidence=conf))
 
-        matches = []
-        if ocr_results:
-            best_text = ocr_results[0].text
-            if best_text and len(best_text.strip()) > 1:
-                matches = search_components_ocr(mapped_category, best_text)
+            mapped_category = YOLO_TO_DB_CATEGORY.get(det["category"], det["category"])
 
-        if not matches:
-            matches = search_components_ocr(mapped_category, "")
+            matches = []
+            if ocr_results:
+                best_text = ocr_results[0].text
+                if best_text and len(best_text.strip()) > 1:
+                    print(f"    searching {mapped_category} for '{best_text}'...")
+                    matches = search_components_ocr(mapped_category, best_text)
+                    print(f"    found {len(matches)} matches")
 
-        return DetectionResult(
-            category=det["category"],
-            confidence=det["confidence"],
-            bbox=BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2),
-            ocr_results=ocr_results,
-            matches=matches,
-        )
+            if not matches:
+                print(f"    fallback search {mapped_category} (no text)...")
+                matches = search_components_ocr(mapped_category, "")
+                print(f"    found {len(matches)} fallback matches")
 
-    detection_results = []
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        futures = [pool.submit(process_detection, det) for det in detections_raw]
-        for f in as_completed(futures):
-            result = f.result()
-            if result is not None:
-                detection_results.append(result)
+            return DetectionResult(
+                category=det["category"],
+                confidence=det["confidence"],
+                bbox=BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2),
+                ocr_results=ocr_results,
+                matches=matches,
+            )
 
-    return AnalyzeResponse(detections=detection_results)
+        detection_results = []
+        print(f"  processing {len(detections_raw)} detections with OCR (max_workers=2)...")
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(process_detection, det) for det in detections_raw]
+            for f in as_completed(futures):
+                result = f.result()
+                if result is not None:
+                    detection_results.append(result)
+
+        print(f"  returning {len(detection_results)} detection results")
+        return AnalyzeResponse(detections=detection_results)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"  ERROR in /analyze: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/search", response_model=SearchResponse)
