@@ -20,7 +20,9 @@ class YoloDetector:
         """
         # Ultralytics expects RGB or path; we convert to RGB array.
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-        results = self.model(image_rgb, verbose=False)
+        h, w = image_rgb.shape[:2]
+        target = min(max(h, w), 640)
+        results = self.model(image_rgb, imgsz=target, verbose=False)
 
         detections: List[dict] = []
         if not results:

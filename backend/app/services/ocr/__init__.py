@@ -63,36 +63,16 @@ class TesseractOCREngine:
         return " ".join((text or "").split()).strip()
 
     def _build_variants(self, image_bgr: np.ndarray) -> List[np.ndarray]:
-        """
-        Try multiple preprocessing variants because component labels vary a lot
-        (dark background, low contrast, tiny text).
-        """
         gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
-        # Upscale small crops to help Tesseract recognition.
         gray = cv2.resize(gray, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
         denoised = cv2.medianBlur(gray, 3)
 
-        # Variant 1: Otsu threshold
         v1 = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-        # Variant 2: Inverted Otsu threshold (for bright-on-dark labels)
-        v2 = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-        # Variant 3: Adaptive threshold
-        v3 = cv2.adaptiveThreshold(
-            denoised,
-            255,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY,
-            31,
-            2,
-        )
-        # Variant 4: Raw denoised grayscale
-        v4 = denoised
-        return [v1, v2, v3, v4]
+        return [v1, denoised]
 
     def recognize(self, image_bgr: np.ndarray) -> List[Tuple[str, float]]:
         variants = self._build_variants(image_bgr)
-        # psm 6: assume a block of text; psm 7: single text line
-        configs = ["--oem 3 --psm 6", "--oem 3 --psm 7"]
+        configs = ["--oem 3 --psm 7"]
 
         best_text = ""
         best_conf = -1.0

@@ -1,5 +1,6 @@
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional
 
 import cv2
@@ -122,20 +123,18 @@ def analyze_image(
     ocr_engine = get_ocr_engine()
 
     detections_raw = yolo.detect(image_bgr)
-    detection_results: List[DetectionResult] = []
 
-    for det in detections_raw:
+    def process_detection(det):
         x1, y1, x2, y2 = det["bbox"]
         crop = image_bgr[y1:y2, x1:x2]
-        if crop.size == 0:
-            continue
+        if crop.size == 0 or det["confidence"] < 0.5:
+            return None
 
         raw_ocr = ocr_engine.recognize(crop)
-        ocr_results: List[OCRResult] = []
+        ocr_results = []
         for text, conf in raw_ocr:
-            if not text:
-                continue
-            ocr_results.append(OCRResult(text=text, confidence=conf))
+            if text:
+                ocr_results.append(OCRResult(text=text, confidence=conf))
 
         mapped_category = YOLO_TO_DB_CATEGORY.get(det["category"], det["category"])
 
@@ -148,15 +147,21 @@ def analyze_image(
         if not matches:
             matches = search_components_ocr(mapped_category, "")
 
-        detection_results.append(
-            DetectionResult(
-                category=det["category"],
-                confidence=det["confidence"],
-                bbox=BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2),
-                ocr_results=ocr_results,
-                matches=matches,
-            )
+        return DetectionResult(
+            category=det["category"],
+            confidence=det["confidence"],
+            bbox=BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2),
+            ocr_results=ocr_results,
+            matches=matches,
         )
+
+    detection_results = []
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = [pool.submit(process_detection, det) for det in detections_raw]
+        for f in as_completed(futures):
+            result = f.result()
+            if result is not None:
+                detection_results.append(result)
 
     return AnalyzeResponse(detections=detection_results)
 
