@@ -12,3 +12,4 @@ numpy
 # https://mmocr.readthedocs.io/en/latest/get_started/installation.html
 mmocr
 mmengine
+python-dotenv
