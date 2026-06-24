@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY start.sh .
 COPY backend/ backend/
-COPY "/ML Model/ML_datasets/train_dataset/yolo_dataset/runs/detect/train/weights/best.pt" /app/models/best.pt
+COPY ["ML Model/ML_datasets/train_dataset/yolo_dataset/runs/detect/train/weights/best.pt", "/app/models/best.pt"]
 
 RUN mkdir -p backend/app/static
 
