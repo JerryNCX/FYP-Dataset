@@ -11,9 +11,9 @@ image_download.py
 test_stock_sort.py
 components_catalog_clean.csv
 yolov8n.pt
-ML Model/ML_datasets/Amazon Dataset/
-ML Model/ML_datasets/data/
-ML Model/ML_datasets/train_dataset/image/
-ML Model/ML_datasets/train_dataset/EasyOCR_dataset/
-ML Model/ML_datasets/train_dataset/mmocr_results/
-ML Model/ML_datasets/train_dataset/split_dataset/
+**/Amazon Dataset/
+**/data/
+**/train_dataset/image/
+**/train_dataset/EasyOCR_dataset/
+**/train_dataset/mmocr_results/
+**/train_dataset/split_dataset/
